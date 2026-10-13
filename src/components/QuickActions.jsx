@@ -1,7 +1,7 @@
 import React from 'react';
-import { Fuel, Plus, Navigation } from 'lucide-react';
+import { Fuel, Plus, Navigation, Wrench } from 'lucide-react';
 
-export function QuickActions({ onOpenFuelModal, onOpenTripModal }) {
+export function QuickActions({ onOpenFuelModal, onOpenTripModal, onOpenServiceModal }) {
   return (
     <div className="quick-actions-bar">
       <button
@@ -12,7 +12,7 @@ export function QuickActions({ onOpenFuelModal, onOpenTripModal }) {
         <span className="btn-icon-circle fuel-btn-icon">
           <Fuel size={20} />
         </span>
-        <span className="btn-title">Log Fuel Refill</span>
+        <span className="btn-title">Log Fuel</span>
         <Plus size={18} className="btn-plus-icon" />
       </button>
 
@@ -24,7 +24,19 @@ export function QuickActions({ onOpenFuelModal, onOpenTripModal }) {
         <span className="btn-icon-circle trip-btn-icon">
           <Navigation size={20} />
         </span>
-        <span className="btn-title">Log Daily Ride</span>
+        <span className="btn-title">Log Ride</span>
+        <Plus size={18} className="btn-plus-icon" />
+      </button>
+
+      <button
+        onClick={onOpenServiceModal}
+        className="action-btn service-action-btn"
+        id="btn-log-service"
+      >
+        <span className="btn-icon-circle service-btn-icon">
+          <Wrench size={20} />
+        </span>
+        <span className="btn-title">Log Service</span>
         <Plus size={18} className="btn-plus-icon" />
       </button>
     </div>

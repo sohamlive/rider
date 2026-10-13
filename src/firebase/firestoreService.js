@@ -16,7 +16,7 @@ import { db, isFirebaseConfigured } from './config';
  * Subscribe in real-time to user's fuel logs, trips, and settings
  * Provides automatic offline caching and sync status callbacks
  */
-export function subscribeToUserData(userId, { onFuelLogs, onTrips, onSettings, onSyncStatus }) {
+export function subscribeToUserData(userId, { onFuelLogs, onTrips, onServices, onSettings, onSyncStatus }) {
   if (!isFirebaseConfigured || !db || !userId) {
     return () => {};
   }
@@ -24,9 +24,10 @@ export function subscribeToUserData(userId, { onFuelLogs, onTrips, onSettings, o
   const unsubscribes = [];
   let fuelPending = false;
   let tripsPending = false;
+  let servicesPending = false;
 
   const updateOverallSyncStatus = () => {
-    const isSyncing = fuelPending || tripsPending;
+    const isSyncing = fuelPending || tripsPending || servicesPending;
     if (onSyncStatus) {
       onSyncStatus({
         isSyncing,
@@ -40,6 +41,7 @@ export function subscribeToUserData(userId, { onFuelLogs, onTrips, onSettings, o
         .then(() => {
           fuelPending = false;
           tripsPending = false;
+          servicesPending = false;
           if (onSyncStatus) {
             onSyncStatus({
               isSyncing: false,
@@ -115,7 +117,38 @@ export function subscribeToUserData(userId, { onFuelLogs, onTrips, onSettings, o
     console.error('Failed to listen to trips:', err);
   }
 
-  // 3. Subscribe to settings with includeMetadataChanges enabled
+  // 3. Subscribe to service logs with includeMetadataChanges enabled
+  try {
+    const servicesRef = collection(db, 'users', userId, 'services');
+    const servicesQuery = query(servicesRef, orderBy('date', 'desc'));
+
+    const unsubServices = onSnapshot(
+      servicesQuery,
+      { includeMetadataChanges: true },
+      (snapshot) => {
+        servicesPending = snapshot.metadata.hasPendingWrites;
+        updateOverallSyncStatus();
+
+        const serviceList = [];
+        snapshot.forEach((docSnap) => {
+          serviceList.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        if (onServices) {
+          onServices(serviceList);
+        }
+      },
+      (error) => {
+        console.error('Error in services subscription:', error);
+        servicesPending = false;
+        updateOverallSyncStatus();
+      }
+    );
+    unsubscribes.push(unsubServices);
+  } catch (err) {
+    console.error('Failed to listen to services:', err);
+  }
+
+  // 4. Subscribe to settings with includeMetadataChanges enabled
   try {
     const settingsDocRef = doc(db, 'users', userId, 'settings', 'general');
     const unsubSettings = onSnapshot(
@@ -181,6 +214,26 @@ export async function deleteTripCloud(userId, tripId) {
 }
 
 /**
+ * Save or update a service log document in Firestore
+ */
+export async function saveServiceLogCloud(userId, service) {
+  if (!isFirebaseConfigured || !db || !userId) return;
+  const docId = service.id || `service_${Date.now()}`;
+  const docRef = doc(db, 'users', userId, 'services', docId);
+  const data = { ...service, id: docId, updatedAt: new Date().toISOString() };
+  await setDoc(docRef, data, { merge: true });
+}
+
+/**
+ * Delete a service log document from Firestore
+ */
+export async function deleteServiceLogCloud(userId, serviceId) {
+  if (!isFirebaseConfigured || !db || !userId) return;
+  const docRef = doc(db, 'users', userId, 'services', serviceId);
+  await deleteDoc(docRef);
+}
+
+/**
  * Save settings document in Firestore
  */
 export async function saveSettingsCloud(userId, settings) {
@@ -192,7 +245,7 @@ export async function saveSettingsCloud(userId, settings) {
 /**
  * Migrate existing localStorage data to Cloud Firestore if cloud collections are empty
  */
-export async function migrateLocalDataToCloud(userId, localFuelLogs, localTrips, localSettings) {
+export async function migrateLocalDataToCloud(userId, localFuelLogs, localTrips, localServices, localSettings) {
   if (!isFirebaseConfigured || !db || !userId) return false;
 
   try {
@@ -200,20 +253,30 @@ export async function migrateLocalDataToCloud(userId, localFuelLogs, localTrips,
     const existingFuel = await getDocs(fuelRef);
 
     // Only migrate if cloud has no fuel logs yet and local has data
-    if (existingFuel.empty && localFuelLogs && localFuelLogs.length > 0) {
+    if (existingFuel.empty && ((localFuelLogs && localFuelLogs.length > 0) || (localTrips && localTrips.length > 0) || (localServices && localServices.length > 0))) {
       const batch = writeBatch(db);
 
-      localFuelLogs.forEach((log) => {
-        const id = log.id || `fuel_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
-        const ref = doc(db, 'users', userId, 'fuelLogs', id);
-        batch.set(ref, { ...log, id });
-      });
+      if (localFuelLogs && localFuelLogs.length > 0) {
+        localFuelLogs.forEach((log) => {
+          const id = log.id || `fuel_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+          const ref = doc(db, 'users', userId, 'fuelLogs', id);
+          batch.set(ref, { ...log, id });
+        });
+      }
 
       if (localTrips && localTrips.length > 0) {
         localTrips.forEach((trip) => {
           const id = trip.id || `trip_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
           const ref = doc(db, 'users', userId, 'trips', id);
           batch.set(ref, { ...trip, id });
+        });
+      }
+
+      if (localServices && localServices.length > 0) {
+        localServices.forEach((service) => {
+          const id = service.id || `service_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+          const ref = doc(db, 'users', userId, 'services', id);
+          batch.set(ref, { ...service, id });
         });
       }
 
@@ -253,7 +316,10 @@ export async function clearAllCloudData(userId) {
     const tripsRef = collection(db, 'users', userId, 'trips');
     const tripDocs = await getDocs(tripsRef);
 
-    const allDocs = [...fuelDocs.docs, ...tripDocs.docs];
+    const servicesRef = collection(db, 'users', userId, 'services');
+    const serviceDocs = await getDocs(servicesRef);
+
+    const allDocs = [...fuelDocs.docs, ...tripDocs.docs, ...serviceDocs.docs];
     
     // Firestore writeBatch limit is 500 operations
     const CHUNK_SIZE = 400;
@@ -280,11 +346,11 @@ export async function clearAllCloudData(userId) {
 /**
  * Replace all user data in Cloud Firestore with the provided dataset
  */
-export async function replaceUserDataInCloud(userId, fuelLogs = [], trips = [], settings = null) {
+export async function replaceUserDataInCloud(userId, fuelLogs = [], trips = [], services = [], settings = null) {
   if (!isFirebaseConfigured || !db || !userId) return;
 
   try {
-    // 1. Clear existing fuelLogs & trips
+    // 1. Clear existing fuelLogs, trips, & services
     await clearAllCloudData(userId);
 
     // 2. Insert new documents in chunks of 400
@@ -303,6 +369,14 @@ export async function replaceUserDataInCloud(userId, fuelLogs = [], trips = [], 
         const id = trip.id || `trip_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
         const ref = doc(db, 'users', userId, 'trips', id);
         ops.push((batch) => batch.set(ref, { ...trip, id, updatedAt: new Date().toISOString() }));
+      });
+    }
+
+    if (Array.isArray(services)) {
+      services.forEach((service) => {
+        const id = service.id || `service_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
+        const ref = doc(db, 'users', userId, 'services', id);
+        ops.push((batch) => batch.set(ref, { ...service, id, updatedAt: new Date().toISOString() }));
       });
     }
 

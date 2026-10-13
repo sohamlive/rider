@@ -27,6 +27,7 @@ export function DataModal({
   user,
   fuelLogs,
   trips,
+  services = [],
   settings,
   onClearAll,
   onLoadSample,
@@ -40,7 +41,7 @@ export function DataModal({
   if (!isOpen) return null;
 
   const handleExportJSON = () => {
-    exportAllDataJSON(fuelLogs, trips, settings);
+    exportAllDataJSON(fuelLogs, trips, services, settings);
     setFeedback({ type: 'success', message: 'Full backup JSON downloaded successfully!' });
   };
 

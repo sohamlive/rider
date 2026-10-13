@@ -5,8 +5,10 @@ import { QuickActions } from './components/QuickActions';
 import { AnalyticsView } from './components/AnalyticsView';
 import { FuelHistory } from './components/FuelHistory';
 import { TripHistory } from './components/TripHistory';
+import { ServiceHistory } from './components/ServiceHistory';
 import { FuelModal } from './components/FuelModal';
 import { TripModal } from './components/TripModal';
+import { ServiceModal } from './components/ServiceModal';
 import { DataModal } from './components/DataModal';
 import { FirebaseSetupModal } from './components/FirebaseSetupModal';
 import {
@@ -14,11 +16,14 @@ import {
   saveStoredFuelLogs,
   getStoredTrips,
   saveStoredTrips,
+  getStoredServices,
+  saveStoredServices,
   getStoredSettings,
   saveStoredSettings,
   resetData,
   SAMPLE_FUEL_LOGS,
   SAMPLE_TRIPS,
+  SAMPLE_SERVICE_LOGS,
   DEFAULT_SETTINGS,
 } from './utils/storage';
 import { isFirebaseConfigured } from './firebase/config';
@@ -34,20 +39,23 @@ import {
   deleteFuelLogCloud,
   saveTripCloud,
   deleteTripCloud,
+  saveServiceLogCloud,
+  deleteServiceLogCloud,
   saveSettingsCloud,
   migrateLocalDataToCloud,
   clearAllCloudData,
   replaceUserDataInCloud,
 } from './firebase/firestoreService';
 import { computeFuelStats } from './utils/calculations';
-import { BarChart3, Fuel, Navigation, ChevronRight } from 'lucide-react';
+import { BarChart3, Fuel, Navigation, ChevronRight, Wrench, Plus, X } from 'lucide-react';
 import './App.css';
 
 export function App() {
   const [fuelLogs, setFuelLogs] = useState(() => getStoredFuelLogs());
   const [trips, setTrips] = useState(() => getStoredTrips());
+  const [services, setServices] = useState(() => getStoredServices());
   const [settings, setSettings] = useState(() => getStoredSettings());
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'fuel', 'trips'
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'fuel', 'trips', 'services'
 
   // User Authentication & Cloud Sync
   const [user, setUser] = useState(null);
@@ -61,8 +69,11 @@ export function App() {
   const [fuelToEdit, setFuelToEdit] = useState(null);
   const [isTripModalOpen, setIsTripModalOpen] = useState(false);
   const [tripToEdit, setTripToEdit] = useState(null);
+  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+  const [serviceToEdit, setServiceToEdit] = useState(null);
   const [isDataModalOpen, setIsDataModalOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [isFabOpen, setIsFabOpen] = useState(false);
 
   // Monitor Network Connectivity (Online/Offline)
   useEffect(() => {
@@ -97,7 +108,7 @@ export function App() {
     let initialMigrationChecked = false;
 
     // Migrate local data into Cloud if cloud is completely fresh
-    migrateLocalDataToCloud(user.uid, fuelLogs, trips, settings).then(() => {
+    migrateLocalDataToCloud(user.uid, fuelLogs, trips, services, settings).then(() => {
       initialMigrationChecked = true;
       if (isMounted) {
         setSyncStatus((prev) => ({ ...prev, isSyncing: false }));
@@ -119,6 +130,14 @@ export function App() {
           if (cloudTrips.length > 0 || initialMigrationChecked) {
             setTrips(cloudTrips);
             saveStoredTrips(cloudTrips);
+          }
+        }
+      },
+      onServices: (cloudServices) => {
+        if (Array.isArray(cloudServices)) {
+          if (cloudServices.length > 0 || initialMigrationChecked) {
+            setServices(cloudServices);
+            saveStoredServices(cloudServices);
           }
         }
       },
@@ -155,8 +174,9 @@ export function App() {
   const latestOdo = useMemo(() => {
     const fuelMax = fuelLogs.reduce((max, l) => Math.max(max, l.odometer || 0), 0);
     const tripMax = trips.reduce((max, t) => Math.max(max, t.endOdo || t.startOdo || 0), 0);
-    return Math.max(fuelMax, tripMax) || 19391;
-  }, [fuelLogs, trips]);
+    const serviceMax = services.reduce((max, s) => Math.max(max, s.odometer || 0), 0);
+    return Math.max(fuelMax, tripMax, serviceMax) || 19391;
+  }, [fuelLogs, trips, services]);
 
   // Toggle Theme
   const handleToggleTheme = () => {
@@ -173,13 +193,16 @@ export function App() {
   const handleDataReload = () => {
     const logs = getStoredFuelLogs();
     const trps = getStoredTrips();
+    const srvs = getStoredServices();
     const stt = getStoredSettings();
     setFuelLogs(logs);
     setTrips(trps);
+    setServices(srvs);
     setSettings(stt);
     if (user) {
       logs.forEach((l) => saveFuelLogCloud(user.uid, l));
       trps.forEach((t) => saveTripCloud(user.uid, t));
+      srvs.forEach((s) => saveServiceLogCloud(user.uid, s));
       saveSettingsCloud(user.uid, stt);
     }
   };
@@ -189,8 +212,10 @@ export function App() {
     resetData('clear');
     setFuelLogs([]);
     setTrips([]);
+    setServices([]);
     saveStoredFuelLogs([]);
     saveStoredTrips([]);
+    saveStoredServices([]);
     if (user) {
       await clearAllCloudData(user.uid);
     }
@@ -201,22 +226,25 @@ export function App() {
     resetData('sample');
     setFuelLogs(SAMPLE_FUEL_LOGS);
     setTrips(SAMPLE_TRIPS);
+    setServices(SAMPLE_SERVICE_LOGS);
     setSettings(DEFAULT_SETTINGS);
     if (user) {
-      await replaceUserDataInCloud(user.uid, SAMPLE_FUEL_LOGS, SAMPLE_TRIPS, DEFAULT_SETTINGS);
+      await replaceUserDataInCloud(user.uid, SAMPLE_FUEL_LOGS, SAMPLE_TRIPS, SAMPLE_SERVICE_LOGS, DEFAULT_SETTINGS);
     }
   };
 
   // Restore backup data (local & cloud)
   const handleRestoreData = async (data) => {
     if (user && data) {
-      await replaceUserDataInCloud(user.uid, data.fuelLogs, data.trips, data.settings);
+      await replaceUserDataInCloud(user.uid, data.fuelLogs, data.trips, data.services, data.settings);
     }
     const logs = getStoredFuelLogs();
     const trps = getStoredTrips();
+    const srvs = getStoredServices();
     const stt = getStoredSettings();
     setFuelLogs(logs);
     setTrips(trps);
+    setServices(srvs);
     setSettings(stt);
   };
 
@@ -364,6 +392,43 @@ export function App() {
     }
   };
 
+  // Service Handlers
+  const handleOpenAddService = () => {
+    setServiceToEdit(null);
+    setIsServiceModalOpen(true);
+  };
+
+  const handleEditService = (service) => {
+    setServiceToEdit(service);
+    setIsServiceModalOpen(true);
+  };
+
+  const handleSaveService = (payload) => {
+    let nextServices;
+    if (serviceToEdit) {
+      nextServices = services.map((s) => (s.id === payload.id ? payload : s));
+    } else {
+      nextServices = [payload, ...services.filter((s) => s.id !== payload.id)];
+    }
+    setServices(nextServices);
+    saveStoredServices(nextServices);
+
+    if (user) {
+      saveServiceLogCloud(user.uid, payload);
+    }
+  };
+
+  const handleDeleteService = (id) => {
+    if (window.confirm('Delete this service record?')) {
+      const nextServices = services.filter((s) => s.id !== id);
+      setServices(nextServices);
+      saveStoredServices(nextServices);
+      if (user) {
+        deleteServiceLogCloud(user.uid, id);
+      }
+    }
+  };
+
   return (
     <div className="app-layout">
       {/* Top Header */}
@@ -389,6 +454,7 @@ export function App() {
         <QuickActions
           onOpenFuelModal={handleOpenAddFuel}
           onOpenTripModal={handleOpenAddTrip}
+          onOpenServiceModal={handleOpenAddService}
         />
 
         {/* Navigation Tabs */}
@@ -398,21 +464,32 @@ export function App() {
             className={`tab-btn ${activeTab === 'dashboard' ? 'tab-active' : ''}`}
           >
             <BarChart3 size={17} />
-            <span>Dashboard & Insights</span>
+            <span className="tab-label-full">Dashboard & Insights</span>
+            <span className="tab-label-short">Dashboard</span>
           </button>
           <button
             onClick={() => setActiveTab('fuel')}
             className={`tab-btn ${activeTab === 'fuel' ? 'tab-active' : ''}`}
           >
             <Fuel size={17} />
-            <span>Fuel Logs ({fuelLogs.length})</span>
+            <span className="tab-label-full">Fuel Logs ({fuelLogs.length})</span>
+            <span className="tab-label-short">Fuel ({fuelLogs.length})</span>
           </button>
           <button
             onClick={() => setActiveTab('trips')}
             className={`tab-btn ${activeTab === 'trips' ? 'tab-active' : ''}`}
           >
             <Navigation size={17} />
-            <span>Daily Rides ({trips.length})</span>
+            <span className="tab-label-full">Daily Rides ({trips.length})</span>
+            <span className="tab-label-short">Rides ({trips.length})</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('services')}
+            className={`tab-btn ${activeTab === 'services' ? 'tab-active' : ''}`}
+          >
+            <Wrench size={17} />
+            <span className="tab-label-full">Service ({services.length})</span>
+            <span className="tab-label-short">Service ({services.length})</span>
           </button>
         </nav>
 
@@ -464,6 +541,26 @@ export function App() {
                 onAddClick={handleOpenAddTrip}
               />
             </div>
+
+            {/* Recent Services Quick Peek */}
+            <div className="recent-peek-section">
+              <div className="peek-header-row">
+                <h3 className="peek-title">Recent Maintenance</h3>
+                <button
+                  onClick={() => setActiveTab('services')}
+                  className="peek-link-btn"
+                >
+                  <span>View all</span>
+                  <ChevronRight size={15} />
+                </button>
+              </div>
+              <ServiceHistory
+                services={services.slice(0, 3)}
+                onEdit={handleEditService}
+                onDelete={handleDeleteService}
+                onAddClick={handleOpenAddService}
+              />
+            </div>
           </div>
         )}
 
@@ -490,25 +587,81 @@ export function App() {
             />
           </div>
         )}
+
+        {/* View 4: Service History List */}
+        {activeTab === 'services' && (
+          <div className="tab-pane">
+            <ServiceHistory
+              services={services}
+              onEdit={handleEditService}
+              onDelete={handleDeleteService}
+              onAddClick={handleOpenAddService}
+            />
+          </div>
+        )}
       </main>
 
-      {/* Floating Action Button for Mobile screens */}
+      {/* Expandable Floating Action Button for Mobile screens */}
       <div className="mobile-fab-container">
+        {isFabOpen && (
+          <>
+            <div
+              className="fab-backdrop"
+              onClick={() => setIsFabOpen(false)}
+            />
+            <div className="fab-menu">
+              <button
+                onClick={() => {
+                  setIsFabOpen(false);
+                  handleOpenAddFuel();
+                }}
+                className="fab-item fab-fuel"
+                title="Log Fuel"
+                aria-label="Log Fuel"
+              >
+                <span className="fab-item-label">Log Fuel</span>
+                <div className="fab-item-icon">
+                  <Fuel size={20} />
+                </div>
+              </button>
+              <button
+                onClick={() => {
+                  setIsFabOpen(false);
+                  handleOpenAddTrip();
+                }}
+                className="fab-item fab-trip"
+                title="Log Ride"
+                aria-label="Log Ride"
+              >
+                <span className="fab-item-label">Log Ride</span>
+                <div className="fab-item-icon">
+                  <Navigation size={20} />
+                </div>
+              </button>
+              <button
+                onClick={() => {
+                  setIsFabOpen(false);
+                  handleOpenAddService();
+                }}
+                className="fab-item fab-service"
+                title="Log Service"
+                aria-label="Log Service"
+              >
+                <span className="fab-item-label">Log Service</span>
+                <div className="fab-item-icon">
+                  <Wrench size={20} />
+                </div>
+              </button>
+            </div>
+          </>
+        )}
         <button
-          onClick={handleOpenAddFuel}
-          className="mobile-fab fab-fuel"
-          title="Add Fuel"
-          aria-label="Add Fuel"
+          onClick={() => setIsFabOpen(!isFabOpen)}
+          className={`mobile-fab-main ${isFabOpen ? 'fab-open' : ''}`}
+          title="Quick Actions"
+          aria-label="Quick Actions"
         >
-          <Fuel size={22} />
-        </button>
-        <button
-          onClick={handleOpenAddTrip}
-          className="mobile-fab fab-trip"
-          title="Log Ride"
-          aria-label="Log Ride"
-        >
-          <Navigation size={22} />
+          {isFabOpen ? <X size={24} /> : <Plus size={26} />}
         </button>
       </div>
 
@@ -538,6 +691,18 @@ export function App() {
         initialTrip={tripToEdit}
       />
 
+      {/* Service / Maintenance Modal */}
+      <ServiceModal
+        isOpen={isServiceModalOpen}
+        onClose={() => {
+          setIsServiceModalOpen(false);
+          setServiceToEdit(null);
+        }}
+        onSave={handleSaveService}
+        lastOdo={latestOdo}
+        initialService={serviceToEdit}
+      />
+
       {/* Backup & Data Modal */}
       <DataModal
         isOpen={isDataModalOpen}
@@ -545,6 +710,7 @@ export function App() {
         user={user}
         fuelLogs={fuelLogs}
         trips={trips}
+        services={services}
         settings={settings}
         onClearAll={handleClearAllData}
         onLoadSample={handleLoadSampleData}

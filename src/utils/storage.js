@@ -5,8 +5,36 @@
 const STORAGE_KEYS = {
   FUEL_LOGS: 'activa_fuel_logs_v1',
   TRIPS: 'activa_trips_v1',
+  SERVICES: 'activa_services_v1',
   SETTINGS: 'activa_settings_v1',
 };
+
+export const SAMPLE_SERVICE_LOGS = [
+  {
+    id: 'service_1',
+    date: '2026-08-15T10:30',
+    type: 'Service',
+    odometer: 18200,
+    cost: 1450,
+    notes: 'Engine oil replacement, brake shoe cleaning, general servicing',
+  },
+  {
+    id: 'service_2',
+    date: '2026-09-12T16:00',
+    type: 'Air',
+    odometer: 18750,
+    cost: 20,
+    notes: 'Tyre pressure refill (front 22 psi, rear 29 psi)',
+  },
+  {
+    id: 'service_3',
+    date: '2026-10-02T11:45',
+    type: 'Battery',
+    odometer: 19200,
+    cost: 850,
+    notes: 'Battery terminal cleanup and top-up charging',
+  },
+];
 
 // Initial realistic seed data for Honda Activa 3G
 export const SAMPLE_FUEL_LOGS = [
@@ -178,6 +206,28 @@ export function saveStoredTrips(trips) {
   }
 }
 
+export function getStoredServices() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.SERVICES);
+    if (!raw) {
+      localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(SAMPLE_SERVICE_LOGS));
+      return SAMPLE_SERVICE_LOGS;
+    }
+    return JSON.parse(raw);
+  } catch (e) {
+    console.error('Error reading services from localStorage:', e);
+    return SAMPLE_SERVICE_LOGS;
+  }
+}
+
+export function saveStoredServices(services) {
+  try {
+    localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(services));
+  } catch (e) {
+    console.error('Error saving services:', e);
+  }
+}
+
 export function getStoredSettings() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.SETTINGS);
@@ -202,7 +252,7 @@ export function saveStoredSettings(settings) {
 /**
  * Export complete data as a JSON file
  */
-export function exportAllDataJSON(customFuel, customTrips, customSettings) {
+export function exportAllDataJSON(customFuel, customTrips, customServices, customSettings) {
   const data = {
     exportedAt: new Date().toISOString(),
     version: '1.0',
@@ -210,6 +260,7 @@ export function exportAllDataJSON(customFuel, customTrips, customSettings) {
     settings: customSettings || getStoredSettings(),
     fuelLogs: customFuel || getStoredFuelLogs(),
     trips: customTrips || getStoredTrips(),
+    services: customServices || getStoredServices(),
   };
 
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -285,6 +336,9 @@ export function importDataJSON(jsonString) {
     if (Array.isArray(data.trips)) {
       saveStoredTrips(data.trips);
     }
+    if (Array.isArray(data.services)) {
+      saveStoredServices(data.services);
+    }
     if (data.settings) {
       saveStoredSettings(data.settings);
     }
@@ -301,9 +355,11 @@ export function resetData(mode = 'sample') {
   if (mode === 'sample') {
     localStorage.setItem(STORAGE_KEYS.FUEL_LOGS, JSON.stringify(SAMPLE_FUEL_LOGS));
     localStorage.setItem(STORAGE_KEYS.TRIPS, JSON.stringify(SAMPLE_TRIPS));
+    localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify(SAMPLE_SERVICE_LOGS));
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(DEFAULT_SETTINGS));
   } else if (mode === 'clear') {
     localStorage.setItem(STORAGE_KEYS.FUEL_LOGS, JSON.stringify([]));
     localStorage.setItem(STORAGE_KEYS.TRIPS, JSON.stringify([]));
+    localStorage.setItem(STORAGE_KEYS.SERVICES, JSON.stringify([]));
   }
 }

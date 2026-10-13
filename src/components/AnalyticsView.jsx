@@ -196,12 +196,97 @@ export function AnalyticsView({ fuelLogs = [], trips = [], theme = 'dark' }) {
     },
   };
 
+  // 3. Ride Distance Trend Chart Data (Daily or Weekly)
+  const [rideGroupBy, setRideGroupBy] = useState('daily'); // 'daily' or 'weekly'
+
+  const rideChartData = useMemo(() => {
+    if (!filteredTrips || filteredTrips.length === 0) {
+      return {
+        labels: ['No rides recorded in this period'],
+        datasets: [
+          {
+            type: 'bar',
+            label: 'Distance (km)',
+            data: [0],
+            backgroundColor: isDark ? 'rgba(16, 185, 129, 0.75)' : '#10b981',
+            borderRadius: 6,
+          },
+        ],
+      };
+    }
+
+    const sortedTrips = [...filteredTrips].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+
+    if (rideGroupBy === 'daily') {
+      const dailyMap = {};
+      sortedTrips.forEach((t) => {
+        const dayKey = t.date ? t.date.slice(0, 10) : '';
+        if (dayKey) {
+          dailyMap[dayKey] = (dailyMap[dayKey] || 0) + (Number(t.distanceKm) || 0);
+        }
+      });
+
+      const dayKeys = Object.keys(dailyMap).sort();
+      const labels = dayKeys.map((k) => formatDate(k));
+      const data = dayKeys.map((k) => Math.round(dailyMap[k]));
+
+      return {
+        labels: labels.length > 0 ? labels : ['No rides'],
+        datasets: [
+          {
+            type: 'bar',
+            label: 'Daily Distance (km)',
+            data: data.length > 0 ? data : [0],
+            backgroundColor: isDark ? 'rgba(16, 185, 129, 0.75)' : '#10b981',
+            hoverBackgroundColor: '#059669',
+            borderRadius: 6,
+            barPercentage: 0.6,
+          },
+        ],
+      };
+    } else {
+      // Weekly grouping
+      const weeklyMap = {};
+      sortedTrips.forEach((t) => {
+        if (!t.date) return;
+        const d = new Date(t.date);
+        // Start of week (Monday)
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(d.setDate(diff));
+        const weekKey = monday.toISOString().slice(0, 10);
+        weeklyMap[weekKey] = (weeklyMap[weekKey] || 0) + (Number(t.distanceKm) || 0);
+      });
+
+      const weekKeys = Object.keys(weeklyMap).sort();
+      const labels = weekKeys.map((k) => `Wk of ${formatDate(k)}`);
+      const data = weekKeys.map((k) => Math.round(weeklyMap[k]));
+
+      return {
+        labels: labels.length > 0 ? labels : ['No rides'],
+        datasets: [
+          {
+            type: 'bar',
+            label: 'Weekly Distance (km)',
+            data: data.length > 0 ? data : [0],
+            backgroundColor: isDark ? 'rgba(56, 189, 248, 0.85)' : '#0ea5e9',
+            hoverBackgroundColor: '#0284c7',
+            borderRadius: 6,
+            barPercentage: 0.5,
+          },
+        ],
+      };
+    }
+  }, [filteredTrips, rideGroupBy, isDark]);
+
   return (
     <div className="analytics-section">
       <div className="section-header-row analytics-header-row">
         <div>
           <h2 className="section-title">Performance & Expense Charts</h2>
-          <p className="section-desc">Activa 3G fuel mileage and monthly usage trends</p>
+          <p className="section-desc">Activa 3G fuel mileage, daily rides, and monthly trends</p>
         </div>
 
         {/* Time Range Filter: Past 1 Month (Default), Past 3 Months, All Time */}
@@ -259,11 +344,52 @@ export function AnalyticsView({ fuelLogs = [], trips = [], theme = 'dark' }) {
           </div>
         </div>
 
-        {/* Chart 2: Monthly Fuel Expense vs Distance */}
+        {/* Chart 2: Ride Distance (Daily / Weekly toggle) */}
         <div className="chart-card">
           <div className="chart-card-header">
             <div className="chart-icon-label">
               <BarChart3 size={18} className="chart-icon text-emerald" />
+              <h3>Ride Distance ({rideGroupBy === 'daily' ? 'Daily' : 'Weekly'})</h3>
+            </div>
+            <div className="time-filter-group chart-inline-filter" role="group" aria-label="Ride grouping">
+              <button
+                type="button"
+                className={`filter-btn ${rideGroupBy === 'daily' ? 'filter-active' : ''}`}
+                onClick={() => setRideGroupBy('daily')}
+              >
+                Daily
+              </button>
+              <button
+                type="button"
+                className={`filter-btn ${rideGroupBy === 'weekly' ? 'filter-active' : ''}`}
+                onClick={() => setRideGroupBy('weekly')}
+              >
+                Weekly
+              </button>
+            </div>
+          </div>
+          <div className="chart-canvas-wrapper">
+            <Bar
+              data={rideChartData}
+              options={{
+                ...defaultOptions,
+                scales: {
+                  ...defaultOptions.scales,
+                  y: {
+                    ...defaultOptions.scales.y,
+                    title: { display: true, text: 'Distance (km)', color: textColor },
+                  },
+                },
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Chart 3: Monthly Fuel Expense vs Distance */}
+        <div className="chart-card chart-full-width">
+          <div className="chart-card-header">
+            <div className="chart-icon-label">
+              <BarChart3 size={18} className="chart-icon text-cyan" />
               <h3>Monthly Fuel Expense vs Distance</h3>
             </div>
             <span className="chart-badge">₹ & km</span>

@@ -7,7 +7,7 @@ export function TripModal({ isOpen, onClose, onSave, lastOdo = 19391, averageCos
   const [entryMode, setEntryMode] = useState('odo'); // 'odo' or 'direct'
   const [title, setTitle] = useState('Daily Ride');
   const [startOdo, setStartOdo] = useState(lastOdo || 19390);
-  const [endOdo, setEndOdo] = useState(lastOdo ? lastOdo + 15 : 19405);
+  const [endOdo, setEndOdo] = useState(lastOdo ? lastOdo + 5 : 19405);
   const [distanceKm, setDistanceKm] = useState('15');
   const [date, setDate] = useState(() => {
     const now = new Date();
