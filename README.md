@@ -1,8 +1,8 @@
-# 🛵 Honda Activa 3G Riding Tracker & Cost Analytics
+# 🛵 Rider — Activa 3G Fuel, Ride & Maintenance Tracker
 
-A lightweight, mobile-first Progressive Web Application (PWA) tailored specifically for daily Activa 3G riders. Track fuel expenses across daily price revisions, calculate real-world mileage ($km/L$), monitor cost per kilometre ($₹/km$), and log daily commutes.
+A lightweight, mobile-first Progressive Web Application (PWA) tailored specifically for daily Honda Activa 3G riders. Track fuel expenses across daily price revisions, calculate real-world mileage ($km/L$), monitor running cost per kilometre ($₹/km$), log daily rides, and track vehicle maintenance & service costs.
 
-Designed to be hosted on **GitHub Pages** under your custom domain `rider.sidelower.in` (or `sidelower.in`).
+Designed to be hosted on **GitHub Pages** under your custom domain `rider.sidelower.in` (or `play.sidelower.in`).
 
 ---
 
@@ -17,32 +17,43 @@ Designed to be hosted on **GitHub Pages** under your custom domain `rider.sidelo
 - **Odometer Tracking**: Auto-validates current odometer and shows distance covered since previous refill.
 
 ### 🛵 Daily Rides & Commute Logger
-- Track trips (Office Commute, Market Run, Joyride, Highway, Errands).
-- **Dual distance input**: Enter Start & End Odometer, or direct distance in km.
+- **Trip Tracking**: Log rides by purpose (Office Commute, Market Run, Joyride, Highway, Errands).
+- **Dual Distance Input**: Enter Start & End Odometer, or direct distance in km.
 - **Live Ride Cost Calculation**: Auto-computes estimated fuel cost for the trip using your vehicle's live $₹/km$ average.
-- **v2 Ready**: Architecture prepared for Google Maps live GPS route tracking.
+
+### 🔧 Service & Maintenance Logger
+- **Service Types**: Track costs for **General Service & Oil Changes**, tyre **Air** pressure top-ups, and **Battery** maintenance or replacements.
+- **Odometer & Cost Tracking**: Record exact odometer reading, cost incurred (₹), service date, and optional notes.
+- **Maintenance History**: Dedicated timeline view with edit and delete capabilities.
 
 ### 📊 Interactive Analytics & Charts
-- **Mileage Efficiency Trend**: Interactive curve with Activa 3G benchmark line ($42\text{ km/L}$).
-- **Daily Fuel Price Revisions**: Historical price fluctuation timeline.
-- **Monthly Fuel Expense vs. Distance**: Dual-axis bar and line chart.
-- **Ride Purpose Breakdown**: Category distribution doughnut chart.
+- **Time Range Filters**: Global filter to view metrics across **Past 1 Month**, **Past 3 Months**, or **All Time**.
+- **Mileage Efficiency Trend**: Line chart tracking calculated $km/L$ efficiency over time across full tank fills.
+- **Ride Distance Chart (Daily / Weekly Toggle)**: Dedicated bar chart allowing you to switch between daily kilometers ridden and weekly aggregated distances.
+- **Monthly Fuel Expense vs. Distance**: Dual-axis chart comparing monthly fuel spend (₹) with total tracked distance (km).
 
-### 💾 Private Local Storage & Portability
-- **100% Client-Side**: No cloud database or account login required; works offline at the petrol pump.
+### 📱 Clean, Mobile-First User Experience
+- **Expandable Floating Action Button (+)**: Mobile-optimized floating button that smoothly expands with quick actions for **Log Fuel**, **Log Ride**, and **Log Service**.
+- **Responsive Navigation**: Adaptive tab navigation with text labels formatted cleanly to avoid horizontal scrolling on iPhone and compact screens.
+- **Desktop Quick Actions Bar**: Clean 3-card desktop quick actions bar for rapid 1-click entry.
+- **Dark & Light Mode**: Built-in sleek dark theme and high-contrast light theme.
+
+### ☁️ Cloud Sync & Data Portability
+- **Firebase Authentication & Firestore Sync**: Sign in with Google for real-time, cross-device sync with offline caching support.
+- **Works 100% Offline**: Operates fully on LocalStorage if not signed in or when offline at the petrol pump.
 - **1-Click Export/Backup**: Download full history as JSON or Excel-compatible CSVs.
-- **Cross-Device Restore**: Import backup file onto any phone or browser.
+- **Restore & Reset**: Import backup files onto any device or reset with realistic seed data.
 
 ---
 
 ## 🚀 Running Locally
 
-1. Install dependencies:
+1. **Install dependencies**:
    ```bash
    npm install
    ```
 
-2. Start the local server:
+2. **Start the local server**:
    ```bash
    npm run dev
    ```
@@ -51,6 +62,11 @@ Designed to be hosted on **GitHub Pages** under your custom domain `rider.sidelo
    Because `--host` is enabled, you can open the app directly on your phone's browser connected to the same Wi-Fi using the network IP shown in the terminal (e.g. `http://<your-ip>:5173/`).
    - On iOS Safari: Tap **Share** $\rightarrow$ **Add to Home Screen**.
    - On Android Chrome: Tap **Menu (⋮)** $\rightarrow$ **Install App** / **Add to Home screen**.
+
+4. **Production Build**:
+   ```bash
+   npm run build
+   ```
 
 ---
 
@@ -64,7 +80,7 @@ This project is pre-configured with a GitHub Actions workflow in `.github/workfl
    ```bash
    git init
    git add .
-   git commit -m "Initial commit of Activa 3G Riding Tracker"
+   git commit -m "feat: complete Activa 3G Riding & Maintenance Tracker"
    git branch -M main
    git remote add origin https://github.com/<your-username>/rider.git
    git push -u origin main
@@ -94,24 +110,31 @@ This project is pre-configured with a GitHub Actions workflow in `.github/workfl
 rider/
 ├── .github/workflows/deploy.yml  # Automated GitHub Pages CI/CD
 ├── public/
-│   ├── favicon.svg               # Sleek Activa scooter SVG icon
+│   ├── favicon.svg               # Activa scooter SVG icon
 │   └── manifest.json             # PWA Web Manifest
 ├── src/
 │   ├── components/
-│   │   ├── Header.jsx            # Branding, theme toggle, backup trigger
-│   │   ├── HeroStats.jsx         # Mileage, running cost, distance & spent cards
-│   │   ├── QuickActions.jsx      # High-visibility fuel & ride buttons
+│   │   ├── Header.jsx            # Branding, theme toggle, sync badge, backup trigger
+│   │   ├── HeroStats.jsx         # Mileage, running cost, distance & monthly fuel spent cards
+│   │   ├── QuickActions.jsx      # High-visibility fuel, ride, and service buttons (desktop)
 │   │   ├── FuelModal.jsx         # 2-way fuel logger & price revision
 │   │   ├── TripModal.jsx         # Ride logger & cost estimator
-│   │   ├── AnalyticsView.jsx     # Chart.js interactive visualizations
+│   │   ├── ServiceModal.jsx      # Service, air & battery maintenance cost logger
+│   │   ├── AnalyticsView.jsx     # Chart.js visualizations (Mileage, Rides daily/weekly, Expense)
 │   │   ├── FuelHistory.jsx       # Refills timeline with edit/delete
 │   │   ├── TripHistory.jsx       # Rides timeline with edit/delete
-│   │   └── DataModal.jsx         # JSON/CSV backup, restore & sample data
+│   │   ├── ServiceHistory.jsx    # Maintenance timeline with edit/delete
+│   │   ├── DataModal.jsx         # JSON/CSV backup, restore & sample data management
+│   │   └── FirebaseSetupModal.jsx# In-app Firebase configuration walkthrough
+│   ├── firebase/
+│   │   ├── config.js             # Firebase client setup & configuration checker
+│   │   ├── authService.js        # Google authentication & state subscribers
+│   │   └── firestoreService.js   # Real-time multi-collection sync & offline cache
 │   ├── utils/
-│   │   ├── calculations.js       # Mileage math & INR formatters
-│   │   └── storage.js            # LocalStorage & import/export helpers
-│   ├── App.jsx                   # Central state & tab view orchestrator
-│   ├── App.css                   # Responsive styles & design system
-│   └── index.css                 # CSS variables & typography tokens
-└── vite.config.js                # Base relative path for GitHub Pages
+│   │   ├── calculations.js       # Full-to-full mileage engine & INR formatters
+│   │   └── storage.js            # LocalStorage handlers & CSV/JSON data transformers
+│   ├── App.jsx                   # Application root, view routing & modal coordinators
+│   ├── App.css                   # Custom responsive CSS design system
+│   └── index.css                 # Color tokens, fonts & resets
+└── vite.config.js                # Build configuration with vendor chunk splitting
 ```
