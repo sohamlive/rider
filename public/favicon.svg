@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#0284c7" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <rect width="64" height="64" rx="16" fill="#0f172a"/>
+  <!-- Scooter Silhouette / Badge -->
+  <g filter="url(#shadow)" stroke="url(#grad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Wheels -->
+    <circle cx="19" cy="45" r="7" fill="#0f172a" />
+    <circle cx="47" cy="45" r="7" fill="#0f172a" />
+    <!-- Scooter Body -->
+    <path d="M19 45h12l4-15h12l-4 15" fill="none"/>
+    <path d="M26 30h9c2 0 3-1 4-3l3-9h5" fill="none"/>
+    <!-- Seat -->
+    <path d="M22 29h12c1 0 2-1 2-2v-1c0-1-1-2-2-2h-10c-1.5 0-2.5 1-2.5 2.5v1c0 .8.5 1.5 1.5 1.5z" fill="url(#grad)"/>
+    <!-- Front shield -->
+    <path d="M42 21l6 14c.5 1.2 0 2.5-1 3" fill="none"/>
+    <!-- Handle -->
+    <path d="M45 15l4 3" stroke-width="3.5"/>
+    <circle cx="48" cy="18" r="1.5" fill="#38bdf8" />
+  </g>
+</svg>
