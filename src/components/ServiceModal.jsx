@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { X, Wrench, Check, IndianRupee, Gauge, Calendar, AlertCircle, Wind, BatteryCharging } from 'lucide-react';
+import { X, Wrench, Check, IndianRupee, Gauge, Calendar, AlertCircle, Wind, BatteryCharging, Toolbox } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 const SERVICE_TYPES = [
   { id: 'Service', label: 'Service', icon: Wrench, desc: 'General service & oil change' },
   { id: 'Air', label: 'Air', icon: Wind, desc: 'Tyre pressure refill' },
   { id: 'Battery', label: 'Battery', icon: BatteryCharging, desc: 'Battery charge or check' },
+  { id: 'Other', label: 'Other', icon: Toolbox, desc: 'Miscellaneous' },
 ];
 
 export function ServiceModal({
@@ -55,8 +56,9 @@ export function ServiceModal({
     setServiceType(typeId);
     if (!initialService) {
       // Sensible default suggestions based on type
-      if (typeId === 'Air') setCost('20');
+      if (typeId === 'Air') setCost('10');
       else if (typeId === 'Battery') setCost('800');
+      else if (typeId === 'Other') setCost('50');
       else setCost('500');
     }
   };
