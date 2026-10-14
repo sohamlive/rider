@@ -59,6 +59,7 @@ export function App() {
 
   // User Authentication & Cloud Sync
   const [user, setUser] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(isFirebaseConfigured);
   const [syncStatus, setSyncStatus] = useState({
     isSyncing: false,
     isOnline: navigator.onLine,
@@ -84,7 +85,7 @@ export function App() {
     window.addEventListener('offline', handleOffline);
 
     // Check for mobile redirect auth response if applicable
-    checkRedirectAuth();
+    checkRedirectAuth().catch(() => {});
 
     return () => {
       window.removeEventListener('online', handleOnline);
@@ -96,6 +97,7 @@ export function App() {
   useEffect(() => {
     const unsubscribe = subscribeToAuth((currentUser) => {
       setUser(currentUser);
+      setIsAuthLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -438,6 +440,7 @@ export function App() {
         onOpenDataModal={() => setIsDataModalOpen(true)}
         latestOdo={latestOdo}
         user={user}
+        isAuthLoading={isAuthLoading}
         syncStatus={syncStatus}
         isFirebaseConfigured={isFirebaseConfigured}
         onSignIn={handleSignIn}

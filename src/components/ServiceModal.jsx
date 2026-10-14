@@ -185,7 +185,7 @@ export function ServiceModal({
                 placeholder="0"
                 className="form-input bold-input"
                 required
-                autoFocus
+              // autoFocus
               />
             </div>
           </div>

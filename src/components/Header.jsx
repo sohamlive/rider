@@ -16,6 +16,7 @@ export function Header({
   onOpenDataModal,
   latestOdo,
   user,
+  isAuthLoading,
   syncStatus,
   isFirebaseConfigured,
   onSignIn,
@@ -47,6 +48,15 @@ export function Header({
           <span className="sync-dot dot-local"></span>
           <span className="sync-badge-text">Local Storage</span>
         </button>
+      );
+    }
+
+    if (isAuthLoading) {
+      return (
+        <div className="sync-badge sync-badge-checking" title="Connecting to Cloud...">
+          <RefreshCw size={12} className="spin-icon text-muted-sync" />
+          <span className="sync-badge-text">Connecting...</span>
+        </div>
       );
     }
 
@@ -108,7 +118,9 @@ export function Header({
           {renderSyncBadge()}
 
           {/* Google Auth or User Profile */}
-          {user ? (
+          {isAuthLoading ? (
+            <div className="user-avatar-skeleton" title="Checking login status..." />
+          ) : user ? (
             <div className="user-profile-menu" ref={userMenuRef}>
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
