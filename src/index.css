@@ -40,6 +40,7 @@
   --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
 
   --safe-bottom: env(safe-area-inset-bottom, 16px);
+  --safe-top: env(safe-area-inset-top, 0px);
 }
 
 [data-theme='light'] {
