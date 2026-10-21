@@ -47,7 +47,7 @@ import {
   replaceUserDataInCloud,
 } from './firebase/firestoreService';
 import { computeFuelStats } from './utils/calculations';
-import { BarChart3, Fuel, Navigation, ChevronRight, Wrench, Plus, X } from 'lucide-react';
+import { BarChart3, Fuel, Navigation, ChevronRight, Wrench, Plus, X, Download } from 'lucide-react';
 import './App.css';
 
 export function App() {
@@ -75,6 +75,51 @@ export function App() {
   const [isDataModalOpen, setIsDataModalOpen] = useState(false);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [isFabOpen, setIsFabOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  // Catch PWA Install Prompt & Check App Shortcuts
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      // Show prompt banner if user hasn't dismissed it in this session
+      const dismissed = sessionStorage.getItem('rider_install_dismissed');
+      if (!dismissed) {
+        setShowInstallBanner(true);
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // Support manifest shortcuts (?action=fuel or ?action=trip)
+    const urlParams = new URLSearchParams(window.location.search);
+    const action = urlParams.get('action');
+    if (action === 'fuel') {
+      setIsFuelModalOpen(true);
+    } else if (action === 'trip') {
+      setIsTripModalOpen(true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setShowInstallBanner(false);
+    }
+    setDeferredPrompt(null);
+  };
+
+  const handleDismissInstall = () => {
+    setShowInstallBanner(false);
+    sessionStorage.setItem('rider_install_dismissed', 'true');
+  };
 
   // Monitor Network Connectivity (Online/Offline)
   useEffect(() => {
@@ -450,6 +495,34 @@ export function App() {
 
       {/* Main Content Area */}
       <main className="main-container">
+        {/* PWA Install App Banner */}
+        {showInstallBanner && (
+          <div className="pwa-install-banner">
+            <div className="pwa-install-left">
+              <div className="pwa-install-icon">
+                <Download size={18} />
+              </div>
+              <div className="pwa-install-text">
+                <strong>Install Rider App</strong>
+                <span>Install on your phone or desktop for instant offline access</span>
+              </div>
+            </div>
+            <div className="pwa-install-actions">
+              <button onClick={handleInstallClick} className="btn-pwa-install">
+                Install
+              </button>
+              <button
+                onClick={handleDismissInstall}
+                className="btn-pwa-dismiss"
+                aria-label="Dismiss install banner"
+                title="Dismiss"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Hero KPI Cards */}
         <HeroStats stats={stats} totalTripsCount={trips.length} />
 

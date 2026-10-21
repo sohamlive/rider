@@ -1,17 +1,42 @@
 {
-  "name": "Activa 3G Riding Tracker",
-  "short_name": "Activa Log",
-  "description": "Daily fuel, mileage, and trip cost tracker for Honda Activa 3G",
+  "name": "Rider - Fuel & Ride Tracker",
+  "short_name": "Rider",
+  "description": "Daily fuel, mileage, maintenance and trip cost tracker for riders.",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#090d16",
   "theme_color": "#0ea5e9",
+  "categories": ["utilities", "lifestyle", "finance"],
   "icons": [
     {
-      "src": "favicon.svg",
+      "src": "./favicon.svg",
       "sizes": "192x192 512x512",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "./favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Log Fuel",
+      "short_name": "Fuel",
+      "description": "Quickly add a new fuel fill record",
+      "url": "./?action=fuel",
+      "icons": [{ "src": "./favicon.svg", "sizes": "96x96" }]
+    },
+    {
+      "name": "Log Ride",
+      "short_name": "Ride",
+      "description": "Log a daily commute or trip",
+      "url": "./?action=trip",
+      "icons": [{ "src": "./favicon.svg", "sizes": "96x96" }]
     }
   ]
 }
