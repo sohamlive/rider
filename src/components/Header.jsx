@@ -100,7 +100,7 @@ export function Header({
       <div className="header-container">
         <div className="brand-group">
           <div className="scooter-avatar">
-            <Bike className="icon-scooter" size={24} />
+            <img src="./favicon.svg" alt="Rider Logo" className="brand-logo-img" />
           </div>
           <div className="brand-text">
             <div className="brand-title-row">

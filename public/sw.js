@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rider-pwa-v1';
+const CACHE_NAME = 'rider-pwa-v5';
 
 // Static assets to cache immediately on service worker install
 const PRECACHE_ASSETS = [
@@ -6,6 +6,9 @@ const PRECACHE_ASSETS = [
   './index.html',
   './manifest.json',
   './favicon.svg',
+  './apple-touch-icon.png',
+  './icon-192.png',
+  './icon-512.png',
   './icons.svg',
 ];
 

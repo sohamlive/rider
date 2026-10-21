@@ -217,13 +217,33 @@ export function App() {
     return computeFuelStats(fuelLogs, trips, services);
   }, [fuelLogs, trips, services]);
 
-  // Latest odometer
+  // Latest odometer across all entries (fuel, trips, services) for general display
   const latestOdo = useMemo(() => {
     const fuelMax = fuelLogs.reduce((max, l) => Math.max(max, l.odometer || 0), 0);
     const tripMax = trips.reduce((max, t) => Math.max(max, t.endOdo || t.startOdo || 0), 0);
     const serviceMax = services.reduce((max, s) => Math.max(max, s.odometer || 0), 0);
     return Math.max(fuelMax, tripMax, serviceMax) || 19391;
   }, [fuelLogs, trips, services]);
+
+  // Last trip end odometer specifically for starting a new trip
+  const lastTripEndOdo = useMemo(() => {
+    if (trips && trips.length > 0) {
+      // Find the most recent trip by date/odometer
+      const sortedTrips = [...trips].sort((a, b) => {
+        const timeDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (timeDiff !== 0) return timeDiff;
+        return (b.endOdo || b.startOdo || 0) - (a.endOdo || a.startOdo || 0);
+      });
+      const latestTrip = sortedTrips[0];
+      if (latestTrip.endOdo) return Number(latestTrip.endOdo);
+      if (latestTrip.startOdo && latestTrip.distanceKm) {
+        return Number(latestTrip.startOdo) + Number(latestTrip.distanceKm);
+      }
+      if (latestTrip.startOdo) return Number(latestTrip.startOdo);
+    }
+    // Fallback to latestOdo if no trips exist yet
+    return latestOdo;
+  }, [trips, latestOdo]);
 
   // Toggle Theme
   const handleToggleTheme = () => {
@@ -762,7 +782,7 @@ export function App() {
           setTripToEdit(null);
         }}
         onSave={handleSaveTrip}
-        lastOdo={latestOdo}
+        lastOdo={lastTripEndOdo}
         averageCostPerKm={stats.averageCostPerKm}
         initialTrip={tripToEdit}
       />
