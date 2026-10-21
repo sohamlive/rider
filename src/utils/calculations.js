@@ -24,19 +24,27 @@ export function calculateAmount(litres, pricePerLitre) {
  * Distance between two full tank fills divided by the fuel filled to top it off.
  * Also calculates estimated mileage for partial fills based on running averages.
  */
-export function computeFuelStats(fuelLogs = [], trips = []) {
-  if ((!fuelLogs || fuelLogs.length === 0) && (!trips || trips.length === 0)) {
+export function computeFuelStats(fuelLogs = [], trips = [], services = []) {
+  if (
+    (!fuelLogs || fuelLogs.length === 0) &&
+    (!trips || trips.length === 0) &&
+    (!services || services.length === 0)
+  ) {
     return {
       logsWithMileage: [],
       overallMileage: 0,
       totalFuelSpent: 0,
+      totalServiceSpent: 0,
+      totalExpenses: 0,
       currentMonthFuelSpent: 0,
+      currentMonthServiceSpent: 0,
+      currentMonthExpenses: 0,
       currentMonthFuelLitres: 0,
       currentMonthDistance: 0,
-      currentMonthCostPerKm: 0,
+      currentMonthCostPerKm: 2.45,
       totalFuelLitres: 0,
       totalDistanceCovered: 0,
-      averageCostPerKm: 0,
+      averageCostPerKm: 2.45,
       latestPrice: 102.5,
     };
   }
@@ -94,7 +102,17 @@ export function computeFuelStats(fuelLogs = [], trips = []) {
   // Calculate overall distance tracked
   const firstOdo = sorted.length > 0 ? sorted[0].odometer : 0;
   const lastOdo = sorted.length > 0 ? sorted[sorted.length - 1].odometer : 0;
-  const totalDistanceCovered = Math.max(0, lastOdo - firstOdo);
+  let totalDistanceCovered = Math.max(0, lastOdo - firstOdo);
+
+  // If fuel odometer diff is 0, check trips distance
+  const totalTripsDistance = trips.reduce((acc, t) => acc + (Number(t.distanceKm) || 0), 0);
+  if (totalDistanceCovered === 0 && totalTripsDistance > 0) {
+    totalDistanceCovered = totalTripsDistance;
+  }
+
+  // Calculate total service costs
+  const totalServiceSpent = services.reduce((acc, s) => acc + (Number(s.cost) || 0), 0);
+  const totalExpenses = totalFuelSpent + totalServiceSpent;
 
   // Overall mileage across all valid logs
   const validMileages = logsWithMileage
@@ -102,11 +120,14 @@ export function computeFuelStats(fuelLogs = [], trips = []) {
     .map((l) => l.mileage);
 
   let overallMileage = 0;
+  let hasRealMileage = false;
   if (validMileages.length > 0) {
     const sum = validMileages.reduce((acc, val) => acc + val, 0);
     overallMileage = Number((sum / validMileages.length).toFixed(1));
+    hasRealMileage = true;
   } else if (totalFuelLitres > 0 && totalDistanceCovered > 0) {
     overallMileage = Number((totalDistanceCovered / totalFuelLitres).toFixed(1));
+    hasRealMileage = true;
   } else {
     overallMileage = 42.0;
   }
@@ -120,6 +141,7 @@ export function computeFuelStats(fuelLogs = [], trips = []) {
   const allDates = [
     ...sorted.map((l) => l.date),
     ...trips.map((t) => t.date),
+    ...services.map((s) => s.date),
   ].filter(Boolean);
 
   const hasCurrentMonthData = allDates.some((d) => d && d.startsWith(currentMonthKey));
@@ -152,38 +174,57 @@ export function computeFuelStats(fuelLogs = [], trips = []) {
     }
   });
 
-  // This month's tracked distance
+  // Calculate service spent in this month
+  let currentMonthServiceSpent = 0;
+  services.forEach((s) => {
+    if (s.date && s.date.startsWith(activeMonthKey)) {
+      currentMonthServiceSpent += Number(s.cost) || 0;
+    }
+  });
+
+  // This month's total tracked distance & expenses
   const currentMonthDistance = tripsDistanceInMonth > 0 ? tripsDistanceInMonth : odoDistanceInMonth;
+  const currentMonthExpenses = currentMonthFuelSpent + currentMonthServiceSpent;
 
   const latestPrice = sorted[sorted.length - 1]?.pricePerLitre || 102.5;
 
-  // Running cost for this month (₹/km)
-  let currentMonthCostPerKm = 0;
-  if (odoDistanceInMonth > 0 && currentMonthFuelSpent > 0) {
-    currentMonthCostPerKm = Number((currentMonthFuelSpent / odoDistanceInMonth).toFixed(2));
+  // Running cost for this month (Fuel + Service) (₹/km)
+  let currentMonthCostPerKm = 2.45;
+  if (currentMonthDistance > 0 && currentMonthExpenses > 0) {
+    currentMonthCostPerKm = Number((currentMonthExpenses / currentMonthDistance).toFixed(2));
+  } else if (currentMonthDistance > 0 && currentMonthFuelSpent > 0) {
+    currentMonthCostPerKm = Number((currentMonthFuelSpent / currentMonthDistance).toFixed(2));
   } else if (monthMileages.length > 0) {
     const avgMonthMileage = monthMileages.reduce((a, b) => a + b, 0) / monthMileages.length;
     currentMonthCostPerKm = Number((latestPrice / avgMonthMileage).toFixed(2));
-  } else if (overallMileage > 0) {
+  } else if (hasRealMileage && overallMileage > 0) {
     currentMonthCostPerKm = Number((latestPrice / overallMileage).toFixed(2));
   } else {
     currentMonthCostPerKm = 2.45;
   }
 
-  // Cost per km all-time
-  const averageCostPerKm =
-    totalDistanceCovered > 0
-      ? Number((totalFuelSpent / totalDistanceCovered).toFixed(2))
-      : overallMileage > 0 && sorted.length > 0
-        ? Number(((sorted[sorted.length - 1].pricePerLitre || 102.5) / overallMileage).toFixed(2))
-        : 2.45;
+  // Cost per km all-time (Fuel + Service)
+  let averageCostPerKm = 2.45;
+  if (totalDistanceCovered > 0 && totalExpenses > 0) {
+    averageCostPerKm = Number((totalExpenses / totalDistanceCovered).toFixed(2));
+  } else if (totalDistanceCovered > 0 && totalFuelSpent > 0) {
+    averageCostPerKm = Number((totalFuelSpent / totalDistanceCovered).toFixed(2));
+  } else if (hasRealMileage && overallMileage > 0 && sorted.length > 0) {
+    averageCostPerKm = Number(((sorted[sorted.length - 1].pricePerLitre || 102.5) / overallMileage).toFixed(2));
+  } else {
+    averageCostPerKm = 2.45;
+  }
 
   // Return reverse-sorted (newest first) for UI timeline display
   return {
     logsWithMileage: logsWithMileage.reverse(),
     overallMileage,
     totalFuelSpent: Math.round(totalFuelSpent),
+    totalServiceSpent: Math.round(totalServiceSpent),
+    totalExpenses: Math.round(totalExpenses),
     currentMonthFuelSpent: Math.round(currentMonthFuelSpent),
+    currentMonthServiceSpent: Math.round(currentMonthServiceSpent),
+    currentMonthExpenses: Math.round(currentMonthExpenses),
     currentMonthFuelLitres: Number(currentMonthFuelLitres.toFixed(1)),
     currentMonthDistance: Math.round(currentMonthDistance),
     currentMonthCostPerKm,

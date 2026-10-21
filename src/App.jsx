@@ -169,8 +169,8 @@ export function App() {
 
   // Compute fuel & vehicle stats
   const stats = useMemo(() => {
-    return computeFuelStats(fuelLogs, trips);
-  }, [fuelLogs, trips]);
+    return computeFuelStats(fuelLogs, trips, services);
+  }, [fuelLogs, trips, services]);
 
   // Latest odometer
   const latestOdo = useMemo(() => {

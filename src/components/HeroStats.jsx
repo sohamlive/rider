@@ -30,16 +30,16 @@ export function HeroStats({ stats }) {
         </div>
       </div>
 
-      {/* 2. Running Cost for this month */}
-      <div className="stat-card">
+      {/* 2. Total Running Cost (Fuel + Service) */}
+      <div className="stat-card" title="Total Running Cost per km (Fuel + Maintenance)">
         <div className="stat-card-header">
-          <span className="stat-label">Running Cost</span>
+          <span className="stat-label">Total Running Cost</span>
           <div className="stat-icon-wrapper cost-badge">
             <IndianRupee size={18} />
           </div>
         </div>
         <div className="stat-value-group">
-          <span className="stat-main-num">₹ {costPerKmToShow || '--'}</span>
+          <span className="stat-main-num">₹ {costPerKmToShow || '2.45'}</span>
           <span className="stat-unit">/ km</span>
         </div>
       </div>
