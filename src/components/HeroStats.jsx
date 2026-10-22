@@ -44,6 +44,9 @@ export function HeroStats({ stats }) {
           <span className="stat-main-num">{overallMileage || '--'}</span>
           <span className="stat-unit">km / L</span>
         </div>
+        <div className="stat-footer-text muted">
+          Calculated
+        </div>
       </div>
 
       {/* 2. Total Running Cost (Fuel + Service) */}
@@ -56,9 +59,10 @@ export function HeroStats({ stats }) {
         </div>
         <div className="stat-value-group">
           <span className="stat-main-num">₹ {costPerKmToShow || '2.45'}</span>
-          <span className="stat-unit">
-            / km {fuelCostPerKm ? `· ₹${fuelCostPerKm.toFixed(2)} fuel` : ''}
-          </span>
+          <span className="stat-unit">/ km</span>
+        </div>
+        <div className="stat-footer-text price-tag">
+          Fuel: ₹{(fuelCostPerKm || 2.45).toFixed(2)}/km
         </div>
       </div>
 
@@ -76,9 +80,10 @@ export function HeroStats({ stats }) {
               ? currentMonthDistance.toLocaleString('en-IN')
               : 0}
           </span>
-          <span className="stat-unit">
-            km {monthLabel ? `· ${monthLabel}` : ''}
-          </span>
+          <span className="stat-unit">km</span>
+        </div>
+        <div className="stat-footer-text muted">
+          {monthLabel}
         </div>
       </div>
 
@@ -92,7 +97,10 @@ export function HeroStats({ stats }) {
         </div>
         <div className="stat-value-group">
           <span className="stat-main-num">{formatINR(currentMonthFuelSpent ?? 0)}</span>
-          <span className="stat-unit">{currentMonthFuelLitres ?? 0} L</span>
+          <span className="stat-unit">spent</span>
+        </div>
+        <div className="stat-footer-text muted">
+          {currentMonthFuelLitres ?? 0} L filled
         </div>
       </div>
     </section>

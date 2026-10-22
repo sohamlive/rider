@@ -247,10 +247,13 @@
 }
 
 .stat-footer-text {
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .stat-footer-text.positive {
@@ -264,7 +267,7 @@
 
 .stat-footer-text.price-tag {
   color: var(--accent-amber);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* ==================== QUICK ACTIONS ==================== */
