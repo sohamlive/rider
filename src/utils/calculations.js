@@ -45,6 +45,7 @@ export function computeFuelStats(fuelLogs = [], trips = [], services = []) {
       totalFuelLitres: 0,
       totalDistanceCovered: 0,
       averageCostPerKm: 2.45,
+      fuelCostPerKm: 2.45,
       latestPrice: 102.5,
     };
   }
@@ -215,6 +216,16 @@ export function computeFuelStats(fuelLogs = [], trips = [], services = []) {
     averageCostPerKm = 2.45;
   }
 
+  // Pure Fuel Cost per km (dynamic based on latest fuel price and vehicle mileage)
+  let fuelCostPerKm = 2.45;
+  if (hasRealMileage && overallMileage > 0) {
+    fuelCostPerKm = Number((latestPrice / overallMileage).toFixed(2));
+  } else if (totalDistanceCovered > 0 && totalFuelSpent > 0) {
+    fuelCostPerKm = Number((totalFuelSpent / totalDistanceCovered).toFixed(2));
+  } else {
+    fuelCostPerKm = 2.45;
+  }
+
   // Return reverse-sorted (newest first) for UI timeline display
   return {
     logsWithMileage: logsWithMileage.reverse(),
@@ -232,6 +243,7 @@ export function computeFuelStats(fuelLogs = [], trips = [], services = []) {
     totalFuelLitres: Number(totalFuelLitres.toFixed(1)),
     totalDistanceCovered,
     averageCostPerKm,
+    fuelCostPerKm,
     latestPrice,
     minOdo: firstOdo,
     maxOdo: lastOdo,

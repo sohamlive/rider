@@ -10,6 +10,7 @@ export function HeroStats({ stats }) {
     currentMonthDistance,
     currentMonthFuelSpent,
     currentMonthFuelLitres,
+    fuelCostPerKm,
   } = stats;
 
   const costPerKmToShow = currentMonthCostPerKm || averageCostPerKm;
@@ -42,6 +43,11 @@ export function HeroStats({ stats }) {
           <span className="stat-main-num">₹ {costPerKmToShow || '2.45'}</span>
           <span className="stat-unit">/ km</span>
         </div>
+        {fuelCostPerKm && (
+          <div className="stat-subtext" style={{ fontSize: '0.75rem', opacity: 0.75, marginTop: '4px' }}>
+            Fuel only: ₹{(fuelCostPerKm).toFixed(2)}/km
+          </div>
+        )}
       </div>
 
       {/* 3. Tracked Distance for this month */}

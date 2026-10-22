@@ -783,7 +783,7 @@ export function App() {
         }}
         onSave={handleSaveTrip}
         lastOdo={lastTripEndOdo}
-        averageCostPerKm={stats.averageCostPerKm}
+        fuelCostPerKm={stats.fuelCostPerKm}
         initialTrip={tripToEdit}
       />
 

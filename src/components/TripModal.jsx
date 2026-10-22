@@ -3,7 +3,7 @@ import { X, Navigation, Check, Route, Calendar, MapPin, AlertCircle, Gauge } fro
 import confetti from 'canvas-confetti';
 import { formatINR } from '../utils/calculations';
 
-export function TripModal({ isOpen, onClose, onSave, lastOdo = 19391, averageCostPerKm = 2.4, initialTrip = null }) {
+export function TripModal({ isOpen, onClose, onSave, lastOdo = 19391, fuelCostPerKm = 2.45, initialTrip = null }) {
   const [entryMode, setEntryMode] = useState('odo'); // 'odo' or 'direct'
   const [title, setTitle] = useState('Daily Ride');
   const [startOdo, setStartOdo] = useState(lastOdo || 19390);
@@ -52,7 +52,7 @@ export function TripModal({ isOpen, onClose, onSave, lastOdo = 19391, averageCos
   };
 
   const currentDist = parseFloat(distanceKm) || 0;
-  const estimatedCost = Math.round(currentDist * (averageCostPerKm || 2.4));
+  const estimatedCost = Math.round(currentDist * (fuelCostPerKm || 2.45));
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -242,9 +242,9 @@ export function TripModal({ isOpen, onClose, onSave, lastOdo = 19391, averageCos
             <div className="trip-cost-summary-card">
               <div className="trip-cost-left">
                 <span className="trip-cost-label">Est. Fuel Cost for this ride</span>
-                {/* <span className="trip-cost-formula">
-                  {currentDist} km × ₹{averageCostPerKm || 2.4}/km
-                </span> */}
+                <span className="trip-cost-formula">
+                  {currentDist} km × ₹{(fuelCostPerKm || 2.45).toFixed(2)}/km
+                </span>
               </div>
               <div className="trip-cost-right">
                 <span className="trip-cost-amount">₹{estimatedCost}</span>
