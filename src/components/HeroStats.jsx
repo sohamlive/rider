@@ -11,9 +11,24 @@ export function HeroStats({ stats }) {
     currentMonthFuelSpent,
     currentMonthFuelLitres,
     fuelCostPerKm,
+    activeMonthKey,
   } = stats;
 
   const costPerKmToShow = currentMonthCostPerKm || averageCostPerKm;
+
+  // Format month name (e.g. "October 2026") from activeMonthKey ("YYYY-MM") or current date
+  const monthLabel = React.useMemo(() => {
+    try {
+      if (activeMonthKey && /^\d{4}-\d{2}$/.test(activeMonthKey)) {
+        const [year, month] = activeMonthKey.split('-');
+        const d = new Date(parseInt(year, 10), parseInt(month, 10) - 1, 1);
+        return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+      }
+    } catch (e) {
+      // fallback
+    }
+    return new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  }, [activeMonthKey]);
 
   return (
     <section className="hero-stats-grid">
@@ -61,7 +76,9 @@ export function HeroStats({ stats }) {
               ? currentMonthDistance.toLocaleString('en-IN')
               : 0}
           </span>
-          <span className="stat-unit">km</span>
+          <span className="stat-unit">
+            km {monthLabel ? `· ${monthLabel}` : ''}
+          </span>
         </div>
       </div>
 
