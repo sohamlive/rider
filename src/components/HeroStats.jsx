@@ -41,13 +41,10 @@ export function HeroStats({ stats }) {
         </div>
         <div className="stat-value-group">
           <span className="stat-main-num">₹ {costPerKmToShow || '2.45'}</span>
-          <span className="stat-unit">/ km</span>
+          <span className="stat-unit">
+            / km {fuelCostPerKm ? `· ₹${fuelCostPerKm.toFixed(2)} fuel` : ''}
+          </span>
         </div>
-        {fuelCostPerKm && (
-          <div className="stat-subtext" style={{ fontSize: '0.75rem', opacity: 0.75, marginTop: '4px' }}>
-            Fuel only: ₹{(fuelCostPerKm).toFixed(2)}/km
-          </div>
-        )}
       </div>
 
       {/* 3. Tracked Distance for this month */}
